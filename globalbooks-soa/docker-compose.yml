@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # MongoDB instances for each service
+  catalog-db:
+    image: mongo:6.0
+    container_name: catalog-db
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: catalog_db
+    volumes:
+      - catalog_data:/data/db
+
+  orders-db:
+    image: mongo:6.0
+    container_name: orders-db
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_DATABASE: orders_db
+    volumes:
+      - orders_data:/data/db
+
+  payments-db:
+    image: mongo:6.0
+    container_name: payments-db
+    restart: unless-stopped
+    ports:
+      - "27019:27017"
+    environment:
+      MONGO_INITDB_DATABASE: payments_db
+    volumes:
+      - payments_data:/data/db
+
+  shipping-db:
+    image: mongo:6.0
+    container_name: shipping-db
+    restart: unless-stopped
+    ports:
+      - "27020:27017"
+    environment:
+      MONGO_INITDB_DATABASE: shipping_db
+    volumes:
+      - shipping_data:/data/db
+
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  # Apache ODE BPEL Engine
+  apache-ode:
+    image: apache/ode:latest
+    container_name: apache-ode
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - ODE_HOME=/opt/ode
+    volumes:
+      - ode_data:/opt/ode
+
+  # UDDI Registry (Apache jUDDI)
+  uddi-registry:
+    image: apache/juddi:latest
+    container_name: uddi-registry
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      - JUDDI_HOME=/opt/juddi
+
+volumes:
+  catalog_data:
+  orders_data:
+  payments_data:
+  shipping_data:
+  rabbitmq_data:
+  ode_data:
+
+networks:
+  default:
+    name: globalbooks-network
