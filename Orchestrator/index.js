@@ -14,6 +14,9 @@ const {
     generateServiceToken 
 } = require('./oauth-server');
 
+// Import UDDI client for dynamic service discovery
+const OrchestratorUDDIClient = require('./uddi-client');
+
 const app = express();
 const port = 3003;
 
@@ -47,12 +50,51 @@ app.get('/api-docs', (req, res) => {
 });
 
 let channel, connection;
-const rabbitmq_url = 'amqp://rabbitmq';
+const rabbitmq_url = 'amqp://172.18.0.5:5672';
 
-// Function to update catalog stock
+// Initialize UDDI client for dynamic service discovery
+const uddiClient = new OrchestratorUDDIClient();
+
+// Auto-register with UDDI Registry
+async function registerWithUDDI() {
+    try {
+        const axios = require('axios');
+        const serviceData = {
+            serviceId: 'orchestrator-service',
+            name: 'Orchestrator Service',
+            category: 'workflow-orchestration',
+            provider: 'SOA-Microservices',
+            description: 'OAuth2 server and workflow orchestration',
+            version: '1.0.0',
+            interfaces: [
+                {
+                    type: 'REST',
+                    endpoint: 'http://orchestrator:3003',
+                    operations: ['GET', 'POST', 'PUT']
+                }
+            ]
+        };
+        
+        await axios.post('http://uddi-registry:3004/api/services/register', serviceData);
+        console.log('Orchestrator service registered with UDDI Registry');
+    } catch (error) {
+        console.log('UDDI registration failed (will retry):', error.message);
+        // Retry after 5 seconds
+        setTimeout(registerWithUDDI, 5000);
+    }
+}
+
+// Register with UDDI after a short delay
+setTimeout(registerWithUDDI, 2000);
+
+// Function to update catalog stock using UDDI discovery
 async function updateCatalogStock(productId, quantity) {
     try {
-        const response = await axios.put(`http://catalog:8080/api/products/${productId}/stock`, {
+        // Discover catalog service endpoint dynamically
+        const catalogEndpoint = await uddiClient.getServiceEndpoint('catalog-service', 'REST', 'updateStock');
+        const fullUrl = `${catalogEndpoint}/${productId}/stock`;
+        
+        const response = await axios.put(fullUrl, {
             quantity: quantity
         });
         
@@ -81,12 +123,19 @@ async function getServiceToken() {
     }
 }
 
-// Function to make authenticated HTTP requests to other services
-async function makeAuthenticatedRequest(url, method = 'GET', data = null) {
+// Function to make authenticated HTTP requests to other services using UDDI discovery
+async function makeAuthenticatedRequest(serviceId, method = 'GET', data = null, endpoint = null) {
     try {
         const token = await getServiceToken();
         if (!token) {
             throw new Error('Failed to generate service token');
+        }
+
+        // Discover service endpoint if not provided
+        let url = endpoint;
+        if (!url) {
+            const baseEndpoint = await uddiClient.getServiceEndpoint(serviceId, 'REST');
+            url = baseEndpoint;
         }
 
         const config = {
@@ -105,7 +154,7 @@ async function makeAuthenticatedRequest(url, method = 'GET', data = null) {
         const response = await axios(config);
         return response.data;
     } catch (error) {
-        console.error(`Authenticated request failed for ${url}:`, error.message);
+        console.error(`Authenticated request failed for service ${serviceId}:`, error.message);
         throw error;
     }
 }
@@ -230,8 +279,9 @@ app.get('/workflow-status/:orderId', isAuthenticated, hasScope('read'), async (r
     let workflowStatus = { orderId: orderId, details: {} };
 
     try {
-        // Fetch Order details
-        const orderResponse = await makeAuthenticatedRequest(`http://orders:3000/orders/${orderId}`);
+        // Fetch Order details using UDDI discovery
+        const ordersEndpoint = await uddiClient.getServiceEndpoint('orders-service', 'REST', 'getOrder');
+        const orderResponse = await makeAuthenticatedRequest('orders-service', 'GET', null, `${ordersEndpoint}/${orderId}`);
         workflowStatus.details.order = orderResponse;
     } catch (error) {
         workflowStatus.details.order = { status: 'not_found', message: 'Order details not found or Orders service unavailable.' };
@@ -239,8 +289,9 @@ app.get('/workflow-status/:orderId', isAuthenticated, hasScope('read'), async (r
     }
 
     try {
-        // Fetch Payment details
-        const paymentResponse = await makeAuthenticatedRequest(`http://payments:3001/payments/${orderId}`);
+        // Fetch Payment details using UDDI discovery
+        const paymentsEndpoint = await uddiClient.getServiceEndpoint('payments-service', 'REST', 'getPayment');
+        const paymentResponse = await makeAuthenticatedRequest('payments-service', 'GET', null, `${paymentsEndpoint}/${orderId}`);
         workflowStatus.details.payment = paymentResponse;
     } catch (error) {
         workflowStatus.details.payment = { status: 'not_found', message: 'Payment details not found or Payments service unavailable.' };
@@ -248,8 +299,9 @@ app.get('/workflow-status/:orderId', isAuthenticated, hasScope('read'), async (r
     }
 
     try {
-        // Fetch Shipping details
-        const shippingResponse = await makeAuthenticatedRequest(`http://shipping:3002/shipping/${orderId}`);
+        // Fetch Shipping details using UDDI discovery
+        const shippingEndpoint = await uddiClient.getServiceEndpoint('shipping-service', 'REST', 'getShipping');
+        const shippingResponse = await makeAuthenticatedRequest('shipping-service', 'GET', null, `${shippingEndpoint}/${orderId}`);
         workflowStatus.details.shipping = shippingResponse;
     } catch (error) {
         workflowStatus.details.shipping = { status: 'not_found', message: 'Shipping details not found or Shipping service unavailable.' };

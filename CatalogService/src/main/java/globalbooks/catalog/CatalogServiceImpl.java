@@ -1,6 +1,7 @@
 package globalbooks.catalog;
 
 import globalbooks.catalog.utils.RabbitMQPublisher;
+import globalbooks.catalog.utils.UDDIClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.jws.WebService;
@@ -15,6 +16,7 @@ public class CatalogServiceImpl implements CatalogService {
 
     private static Map<String, Product> products = new HashMap<>();
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final UDDIClient uddiClient = new UDDIClient();
 
     static {
         try {
@@ -23,6 +25,9 @@ public class CatalogServiceImpl implements CatalogService {
             System.err.println("Failed to initialize RabbitMQ Publisher: " + e.getMessage());
             // Depending on desired behavior, re-throw or handle gracefully
         }
+        
+        // UDDI client available for service discovery
+        
         // Sample data
         products.put("1", new Product("1", "The Lord of the Rings", "Fantasy novel by J.R.R. Tolkien", 25.00, 100));
         products.put("2", new Product("2", "Pride and Prejudice", "Romantic novel by Jane Austen", 15.50, 150));

@@ -10,6 +10,9 @@ const cors = require('cors');
 // Import OAuth2 configuration
 const { passport, isAuthenticated, hasScope } = require('./auth-config');
 
+// Import UDDI client
+const ShippingUDDIClient = require('./uddi-client');
+
 // Define Shipping Schema and Model
 const ShippingSchema = new mongoose.Schema({
     orderId: { type: String, required: true, unique: true },
@@ -26,6 +29,41 @@ const Shipping = mongoose.model('Shipping', ShippingSchema);
 
 const app = express();
 const port = 3002; // Different port for Shipping service
+
+// Initialize UDDI client
+const uddiClient = new ShippingUDDIClient();
+
+// Auto-register with UDDI Registry
+async function registerWithUDDI() {
+    try {
+        const axios = require('axios');
+        const serviceData = {
+            serviceId: 'shipping-service',
+            name: 'Shipping Service',
+            category: 'shipping-management',
+            provider: 'SOA-Microservices',
+            description: 'Shipping management and tracking',
+            version: '1.0.0',
+            interfaces: [
+                {
+                    type: 'REST',
+                    endpoint: 'http://shipping:3002',
+                    operations: ['GET', 'POST']
+                }
+            ]
+        };
+        
+        await axios.post('http://uddi-registry:3004/api/services/register', serviceData);
+        console.log('Shipping service registered with UDDI Registry');
+    } catch (error) {
+        console.log('UDDI registration failed (will retry):', error.message);
+        // Retry after 5 seconds
+        setTimeout(registerWithUDDI, 5000);
+    }
+}
+
+// Register with UDDI after a short delay
+setTimeout(registerWithUDDI, 2000);
 
 // Middleware
 app.use(cors());
@@ -44,7 +82,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // RabbitMQ Connection
 let channel, connection;
-const rabbitmq_url = 'amqp://rabbitmq';
+const rabbitmq_url = 'amqp://172.18.0.5:5672';
 
 async function connectRabbitMQ() {
     let retries = 5;
@@ -144,6 +182,8 @@ mongoose.connect('mongodb://shipping-db:27017/shipping', {
 })
 .then(() => console.log('Connected to Shipping MongoDB'))
 .catch(err => console.error('Could not connect to Shipping MongoDB...', err));
+
+// UDDI client available for service discovery
 
 // Basic Route
 app.get('/', (req, res) => {

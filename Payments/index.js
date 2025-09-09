@@ -10,6 +10,9 @@ const cors = require('cors');
 // Import OAuth2 configuration
 const { passport, isAuthenticated, hasScope } = require('./auth-config');
 
+// Import UDDI client
+const PaymentsUDDIClient = require('./uddi-client');
+
 // Define Payment Schema and Model
 const PaymentSchema = new mongoose.Schema({
     orderId: { type: String, required: true, unique: true },
@@ -24,6 +27,41 @@ const Payment = mongoose.model('Payment', PaymentSchema);
 
 const app = express();
 const port = 3001; // Different port for Payments service
+
+// Initialize UDDI client
+const uddiClient = new PaymentsUDDIClient();
+
+// Auto-register with UDDI Registry
+async function registerWithUDDI() {
+    try {
+        const axios = require('axios');
+        const serviceData = {
+            serviceId: 'payments-service',
+            name: 'Payments Service',
+            category: 'payment-processing',
+            provider: 'SOA-Microservices',
+            description: 'Payment processing and management',
+            version: '1.0.0',
+            interfaces: [
+                {
+                    type: 'REST',
+                    endpoint: 'http://payments:3001',
+                    operations: ['GET', 'POST']
+                }
+            ]
+        };
+        
+        await axios.post('http://uddi-registry:3004/api/services/register', serviceData);
+        console.log('Payments service registered with UDDI Registry');
+    } catch (error) {
+        console.log('UDDI registration failed (will retry):', error.message);
+        // Retry after 5 seconds
+        setTimeout(registerWithUDDI, 5000);
+    }
+}
+
+// Register with UDDI after a short delay
+setTimeout(registerWithUDDI, 2000);
 
 // Middleware
 app.use(cors());
@@ -42,7 +80,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // RabbitMQ Connection
 let channel, connection;
-const rabbitmq_url = 'amqp://rabbitmq';
+const rabbitmq_url = 'amqp://172.18.0.5:5672';
 
 async function connectRabbitMQ() {
     let retries = 5;
@@ -115,6 +153,8 @@ mongoose.connect('mongodb://payments-db:27017/payments', {
 })
 .then(() => console.log('Connected to Payments MongoDB'))
 .catch(err => console.error('Could not connect to Payments MongoDB...', err));
+
+// UDDI client available for service discovery
 
 // Basic Route
 app.get('/', (req, res) => {

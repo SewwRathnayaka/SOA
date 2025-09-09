@@ -1,0 +1,579 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "SOA Microservices Testing",
+		"description": "Complete test collection for SOA Microservices with OAuth2 authentication",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Service Health Checks",
+			"item": [
+				{
+					"name": "UDDI Registry Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}:3004/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"port": "3004",
+							"path": [
+								"health"
+							]
+						},
+						"description": "Check if UDDI Registry is running"
+					}
+				},
+				{
+					"name": "Orders Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}:3000/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"port": "3000",
+							"path": [
+								"health"
+							]
+						},
+						"description": "Check if Orders Service is running"
+					}
+				},
+				{
+					"name": "Payments Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}:3001/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"port": "3001",
+							"path": [
+								"health"
+							]
+						},
+						"description": "Check if Payments Service is running"
+					}
+				},
+				{
+					"name": "Shipping Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}:3002/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"port": "3002",
+							"path": [
+								"health"
+							]
+						},
+						"description": "Check if Shipping Service is running"
+					}
+				},
+				{
+					"name": "Orchestrator Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}:3003/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"port": "3003",
+							"path": [
+								"health"
+							]
+						},
+						"description": "Check if Orchestrator Service is running"
+					}
+				}
+			],
+			"description": "Health check endpoints for all services"
+		},
+		{
+			"name": "2. OAuth2 Authentication",
+			"item": [
+				{
+					"name": "Manual Token Setup",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}:3003/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"port": "3003",
+							"path": [
+								"health"
+							]
+						},
+						"description": "INSTRUCTIONS:\n1. Run 'get-token.bat' from Token-getter folder\n2. Copy the JWT token from the output\n3. Set the 'accessToken' variable in Postman collection variables\n4. All subsequent requests will use this token automatically\n\nThis request just verifies the Orchestrator service is running."
+					},
+					"response": []
+				}
+			],
+			"description": "Manual OAuth2 token acquisition using get-token.bat script"
+		},
+		{
+			"name": "3. UDDI Registry Tests",
+			"item": [
+				{
+					"name": "UDDI Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3004/health",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3004",
+							"path": [
+								"health"
+							]
+						},
+						"description": "Check if UDDI Registry is running"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Services",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3004/api/services",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3004",
+							"path": [
+								"api",
+								"services"
+							]
+						},
+						"description": "Get all registered services from UDDI Registry"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Orders Service",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3004/api/services/orders-service",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3004",
+							"path": [
+								"api",
+								"services",
+								"orders-service"
+							]
+						},
+						"description": "Get Orders service details from UDDI Registry"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payments Service",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3004/api/services/payments-service",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3004",
+							"path": [
+								"api",
+								"services",
+								"payments-service"
+							]
+						},
+						"description": "Get Payments service details from UDDI Registry"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Shipping Service",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3004/api/services/shipping-service",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3004",
+							"path": [
+								"api",
+								"services",
+								"shipping-service"
+							]
+						},
+						"description": "Get Shipping service details from UDDI Registry"
+					},
+					"response": []
+				}
+			],
+			"description": "Test UDDI Registry service discovery"
+		},
+		{
+			"name": "4. Orders Service Tests",
+			"item": [
+				{
+					"name": "Create Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": \"ORD-{{$timestamp}}\",\n    \"item\": \"Test Book\",\n    \"quantity\": 2,\n    \"customerName\": \"John Doe\",\n    \"shippingAddress\": {\n        \"street\": \"123 Main St\",\n        \"city\": \"New York\",\n        \"zipCode\": \"10001\"\n    }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/orders",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"orders"
+							]
+						},
+						"description": "Create a new order (requires write scope)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Order by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/orders/{{orderId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"orders",
+								"{{orderId}}"
+							]
+						},
+						"description": "Get order details by ID (requires read scope)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Orders (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/orders",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"orders"
+							]
+						},
+						"description": "Get all orders (requires admin scope)"
+					},
+					"response": []
+				}
+			],
+			"description": "Test Orders service endpoints"
+		},
+		{
+			"name": "5. Payments Service Tests",
+			"item": [
+				{
+					"name": "Get Payment by Order ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3001/payments/{{orderId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"payments",
+								"{{orderId}}"
+							]
+						},
+						"description": "Get payment details by Order ID (requires read scope)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Payments (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3001/payments",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"payments"
+							]
+						},
+						"description": "Get all payments (requires admin scope)"
+					},
+					"response": []
+				}
+			],
+			"description": "Test Payments service endpoints"
+		},
+		{
+			"name": "6. Shipping Service Tests",
+			"item": [
+				{
+					"name": "Get Shipping by Order ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3002/shipping/{{orderId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3002",
+							"path": [
+								"shipping",
+								"{{orderId}}"
+							]
+						},
+						"description": "Get shipping details by Order ID (requires read scope)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Shipping (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3002/shipping",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3002",
+							"path": [
+								"shipping"
+							]
+						},
+						"description": "Get all shipping records (requires admin scope)"
+					},
+					"response": []
+				}
+			],
+			"description": "Test Shipping service endpoints"
+		},
+		{
+			"name": "7. Orchestrator Service Tests",
+			"item": [
+				{
+					"name": "Place Order via Orchestrator",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": \"ORD-ORCH-{{$timestamp}}\",\n    \"item\": \"Orchestrated Book\",\n    \"quantity\": 1,\n    \"customerName\": \"Jane Smith\",\n    \"shippingAddress\": {\n        \"street\": \"456 Oak Ave\",\n        \"city\": \"Los Angeles\",\n        \"zipCode\": \"90210\"\n    }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3003/place-order",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3003",
+							"path": [
+								"place-order"
+							]
+						},
+						"description": "Place order through Orchestrator (requires write scope)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Workflow Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3003/workflow-status/{{orderId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3003",
+							"path": [
+								"workflow-status",
+								"{{orderId}}"
+							]
+						},
+						"description": "Get complete workflow status for an order (requires read scope)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Catalog Stock",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"quantity\": 5\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3003/update-catalog-stock/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3003",
+							"path": [
+								"update-catalog-stock",
+								"1"
+							]
+						},
+						"description": "Update catalog stock (requires write scope)"
+					},
+					"response": []
+				}
+			],
+			"description": "Test Orchestrator service endpoints"
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "authCode",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "orderId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

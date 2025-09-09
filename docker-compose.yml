@@ -8,7 +8,12 @@ services:
     environment:
       NODE_ENV: development
     depends_on:
-      - orders-db
+      orders-db:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+      uddi-registry:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -19,7 +24,12 @@ services:
     environment:
       NODE_ENV: development
     depends_on:
-      - payments-db
+      payments-db:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+      uddi-registry:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -30,7 +40,12 @@ services:
     environment:
       NODE_ENV: development
     depends_on:
-      - shipping-db
+      shipping-db:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+      uddi-registry:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -41,7 +56,10 @@ services:
     environment:
       NODE_ENV: development
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_started
+      uddi-registry:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -52,9 +70,29 @@ services:
     environment:
       NODE_ENV: development
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_started
+      uddi-registry:
+        condition: service_healthy
     networks:
       - app-network
+
+  uddi-registry:
+    build: ./UDDI-Registry
+    ports:
+      - "3004:3004"
+    environment:
+      NODE_ENV: development
+    depends_on:
+      - uddi-db
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   orders-db:
     image: mongo:4.4
@@ -83,6 +121,15 @@ services:
     networks:
       - app-network
 
+  uddi-db:
+    image: mongo:4.4
+    ports:
+      - "27020:27017"
+    volumes:
+      - uddi-db-data:/data/db
+    networks:
+      - app-network
+
   rabbitmq:
     image: rabbitmq:3-management
     ports:
@@ -98,6 +145,7 @@ volumes:
   orders-db-data:
   payments-db-data:
   shipping-db-data:
+  uddi-db-data:
 
 networks:
   app-network:

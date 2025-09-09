@@ -1,0 +1,528 @@
+openapi: 3.0.0
+info:
+  title: UDDI Registry Service API
+  version: 1.0.0
+  description: UDDI-based Service Registry for SOA Microservices Discovery and Registration
+servers:
+  - url: http://localhost:3004
+    description: Local UDDI Registry Service
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      responses:
+        '200':
+          description: Service health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  service:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+  /api/services/register:
+    post:
+      summary: Register a new service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRegistration'
+      responses:
+        '201':
+          description: Service registered successfully
+        '400':
+          description: Bad request - missing required fields
+        '500':
+          description: Internal server error
+  /api/services/{serviceId}:
+    get:
+      summary: Get service by ID
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema:
+            type: string
+          description: Unique service identifier
+      responses:
+        '200':
+          description: Service found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+        '404':
+          description: Service not found
+    delete:
+      summary: Deregister a service
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema:
+            type: string
+          description: Unique service identifier
+      responses:
+        '200':
+          description: Service deregistered successfully
+        '404':
+          description: Service not found
+  /api/services/category/{category}:
+    get:
+      summary: Find services by category
+      parameters:
+        - in: path
+          name: category
+          required: true
+          schema:
+            type: string
+          description: Service category
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE, MAINTENANCE, DEPRECATED]
+            default: ACTIVE
+      responses:
+        '200':
+          description: Services found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Service'
+  /api/services/capability/{capability}:
+    get:
+      summary: Find services by capability
+      parameters:
+        - in: path
+          name: capability
+          required: true
+          schema:
+            type: string
+          description: Service capability
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE, MAINTENANCE, DEPRECATED]
+            default: ACTIVE
+      responses:
+        '200':
+          description: Services found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Service'
+  /api/services/interface/{type}:
+    get:
+      summary: Find services by interface type
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema:
+            type: string
+            enum: [REST, SOAP, GraphQL]
+          description: Interface type
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE, MAINTENANCE, DEPRECATED]
+            default: ACTIVE
+      responses:
+        '200':
+          description: Services found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Service'
+  /api/services/search:
+    get:
+      summary: Search services
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Search query
+        - in: query
+          name: category
+          schema:
+            type: string
+          description: Filter by category
+        - in: query
+          name: capability
+          schema:
+            type: string
+          description: Filter by capability
+        - in: query
+          name: interfaceType
+          schema:
+            type: string
+            enum: [REST, SOAP, GraphQL]
+          description: Filter by interface type
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE, MAINTENANCE, DEPRECATED]
+            default: ACTIVE
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+          description: Maximum number of results
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Number of results to skip
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  services:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Service'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+  /api/services:
+    get:
+      summary: Get all services
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE, MAINTENANCE, DEPRECATED]
+            default: ACTIVE
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 100
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of services
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  services:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Service'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+  /api/services/{serviceId}/health:
+    post:
+      summary: Update service health status
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isHealthy:
+                  type: boolean
+                  description: Service health status
+      responses:
+        '200':
+          description: Health status updated
+        '404':
+          description: Service not found
+  /api/services/{serviceId}/heartbeat:
+    post:
+      summary: Send service heartbeat
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                hours:
+                  type: integer
+                  default: 24
+                  description: Hours to extend expiration
+      responses:
+        '200':
+          description: Heartbeat received
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  expiresAt:
+                    type: string
+                    format: date-time
+        '404':
+          description: Service not found
+components:
+  schemas:
+    ServiceRegistration:
+      type: object
+      required:
+        - serviceId
+        - name
+        - description
+        - category
+        - provider
+        - interfaces
+      properties:
+        serviceId:
+          type: string
+          description: Unique service identifier
+        name:
+          type: string
+          description: Service name
+        description:
+          type: string
+          description: Service description
+        version:
+          type: string
+          default: '1.0.0'
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, MAINTENANCE, DEPRECATED]
+          default: ACTIVE
+        category:
+          type: string
+          description: Service category
+        provider:
+          type: string
+          description: Service provider
+        tags:
+          type: array
+          items:
+            type: string
+        interfaces:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceInterface'
+        capabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceCapability'
+        sla:
+          $ref: '#/components/schemas/ServiceSLA'
+        healthCheck:
+          $ref: '#/components/schemas/HealthCheck'
+        metadata:
+          $ref: '#/components/schemas/ServiceMetadata'
+        deprecation:
+          $ref: '#/components/schemas/DeprecationInfo'
+    Service:
+      allOf:
+        - $ref: '#/components/schemas/ServiceRegistration'
+        - type: object
+          properties:
+            registeredAt:
+              type: string
+              format: date-time
+            lastUpdated:
+              type: string
+              format: date-time
+            expiresAt:
+              type: string
+              format: date-time
+    ServiceInterface:
+      type: object
+      required:
+        - type
+        - endpoint
+      properties:
+        type:
+          type: string
+          enum: [REST, SOAP, GraphQL]
+        endpoint:
+          type: string
+          description: Service endpoint URL
+        version:
+          type: string
+          default: '1.0.0'
+        description:
+          type: string
+        methods:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceMethod'
+        wsdlUrl:
+          type: string
+          description: WSDL URL for SOAP services
+        openApiSpec:
+          type: string
+          description: OpenAPI specification for REST services
+    ServiceMethod:
+      type: object
+      required:
+        - name
+        - path
+      properties:
+        name:
+          type: string
+        httpMethod:
+          type: string
+          enum: [GET, POST, PUT, DELETE, PATCH]
+        path:
+          type: string
+        description:
+          type: string
+        parameters:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceParameter'
+    ServiceParameter:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        required:
+          type: boolean
+          default: false
+    ServiceCapability:
+      type: object
+      required:
+        - name
+        - category
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        version:
+          type: string
+          default: '1.0.0'
+    ServiceSLA:
+      type: object
+      properties:
+        uptime:
+          type: number
+          default: 99.5
+          description: Uptime percentage
+        responseTime:
+          type: number
+          default: 200
+          description: Response time in milliseconds
+        throughput:
+          type: number
+          default: 1000
+          description: Requests per second
+        availability:
+          type: string
+          enum: [24/7, Business Hours, On-Demand]
+          default: '24/7'
+    HealthCheck:
+      type: object
+      properties:
+        endpoint:
+          type: string
+          description: Health check endpoint URL
+        interval:
+          type: number
+          default: 30
+          description: Check interval in seconds
+        timeout:
+          type: number
+          default: 5000
+          description: Timeout in milliseconds
+        lastChecked:
+          type: string
+          format: date-time
+        isHealthy:
+          type: boolean
+          default: true
+    ServiceMetadata:
+      type: object
+      properties:
+        environment:
+          type: string
+          enum: [development, staging, production]
+          default: development
+        region:
+          type: string
+          default: us-east-1
+        dataCenter:
+          type: string
+        dependencies:
+          type: array
+          items:
+            type: string
+          description: Other service IDs this service depends on
+        resources:
+          type: object
+          properties:
+            cpu:
+              type: string
+            memory:
+              type: string
+            storage:
+              type: string
+    DeprecationInfo:
+      type: object
+      properties:
+        isDeprecated:
+          type: boolean
+          default: false
+        deprecationDate:
+          type: string
+          format: date-time
+        sunsetDate:
+          type: string
+          format: date-time
+        migrationPath:
+          type: string
+          description: Migration path for deprecated service

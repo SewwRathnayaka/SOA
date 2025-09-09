@@ -10,6 +10,9 @@ const cors = require('cors');
 // Import OAuth2 configuration
 const { passport, isAuthenticated, hasScope } = require('./auth-config');
 
+// Import UDDI client
+const OrdersUDDIClient = require('./uddi-client');
+
 // Define Order Schema and Model
 const OrderSchema = new mongoose.Schema({
     id: { type: String, required: true, unique: true },
@@ -31,6 +34,41 @@ const Order = mongoose.model('Order', OrderSchema);
 const app = express();
 const port = 3000;
 
+// Initialize UDDI client
+const uddiClient = new OrdersUDDIClient();
+
+// Auto-register with UDDI Registry
+async function registerWithUDDI() {
+    try {
+        const axios = require('axios');
+        const serviceData = {
+            serviceId: 'orders-service',
+            name: 'Orders Service',
+            category: 'order-management',
+            provider: 'SOA-Microservices',
+            description: 'Order management and CRUD operations',
+            version: '1.0.0',
+            interfaces: [
+                {
+                    type: 'REST',
+                    endpoint: 'http://orders:3000',
+                    operations: ['GET', 'POST']
+                }
+            ]
+        };
+        
+        await axios.post('http://uddi-registry:3004/api/services/register', serviceData);
+        console.log('Orders service registered with UDDI Registry');
+    } catch (error) {
+        console.log('UDDI registration failed (will retry):', error.message);
+        // Retry after 5 seconds
+        setTimeout(registerWithUDDI, 5000);
+    }
+}
+
+// Register with UDDI after a short delay
+setTimeout(registerWithUDDI, 2000);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -48,7 +86,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // RabbitMQ Connection
 let channel, connection;
-const rabbitmq_url = 'amqp://rabbitmq';
+const rabbitmq_url = 'amqp://172.18.0.5:5672';
 
 async function connectRabbitMQ() {
     let retries = 5;
@@ -76,6 +114,8 @@ mongoose.connect('mongodb://orders-db:27017/orders', {
 })
 .then(() => console.log('Connected to Orders MongoDB'))
 .catch(err => console.error('Could not connect to Orders MongoDB...', err));
+
+// UDDI client available for service discovery
 
 // Basic Route
 app.get('/', (req, res) => {

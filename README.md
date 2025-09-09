@@ -106,6 +106,7 @@ SOA-MicroService/
 ├── 📁 Orchestrator/                    # OAuth2 Server & Workflow Orchestrator
 │   ├── 📄 index.js                     # Main service logic & API endpoints
 │   ├── 📄 oauth-server.js              # OAuth2 authorization server
+│   ├── 📄 uddi-client.js               # UDDI service discovery client
 │   ├── 📄 package.json                 # Dependencies & scripts
 │   ├── 📄 openapi.yaml                 # API specification
 │   └── 📄 Dockerfile                   # Container configuration
@@ -113,6 +114,7 @@ SOA-MicroService/
 ├── 📁 Orders/                          # Order Management Service
 │   ├── 📄 index.js                     # Order CRUD operations & API
 │   ├── 📄 auth-config.js               # OAuth2 client configuration
+│   ├── 📄 uddi-client.js               # UDDI service discovery client
 │   ├── 📄 package.json                 # Dependencies & scripts
 │   ├── 📄 openapi.yaml                 # Swagger/OpenAPI specification
 │   └── 📄 Dockerfile                   # Container configuration
@@ -120,6 +122,7 @@ SOA-MicroService/
 ├── 📁 Payments/                        # Payment Processing Service
 │   ├── 📄 index.js                     # Payment processing logic & API
 │   ├── 📄 auth-config.js               # OAuth2 client configuration
+│   ├── 📄 uddi-client.js               # UDDI service discovery client
 │   ├── 📄 package.json                 # Dependencies & scripts
 │   ├── 📄 openapi.yaml                 # Swagger/OpenAPI specification
 │   └── 📄 Dockerfile                   # Container configuration
@@ -127,6 +130,7 @@ SOA-MicroService/
 ├── 📁 Shipping/                        # Shipping Management Service
 │   ├── 📄 index.js                     # Shipping logic & API
 │   ├── 📄 auth-config.js               # OAuth2 client configuration
+│   ├── 📄 uddi-client.js               # UDDI service discovery client
 │   ├── 📄 package.json                 # Dependencies & scripts
 │   ├── 📄 openapi.yaml                 # Swagger/OpenAPI specification
 │   └── 📄 Dockerfile                   # Container configuration
@@ -140,7 +144,8 @@ SOA-MicroService/
 │   │       ├── 📄 Product.java         # Product model
 │   │       ├── 📄 ProductList.java     # Product list model
 │   │       └── 📁 utils/
-│   │           └── 📄 RabbitMQPublisher.java # Message publishing
+│   │           ├── 📄 RabbitMQPublisher.java # Message publishing
+│   │           └── 📄 UDDIClient.java  # UDDI service discovery client
 │   ├── 📁 src/main/resources/          # Configuration files
 │   │   ├── 📄 application.properties   # Application config
 │   │   └── 📁 wsdl/
@@ -154,17 +159,23 @@ SOA-MicroService/
 │   ├── 📄 pom.xml                      # Maven configuration
 │   └── 📄 Dockerfile                   # Container configuration
 │
+├── 📁 UDDI-Registry/                   # UDDI Service Registry
+│   ├── 📄 index.js                     # UDDI registry server
+│   ├── 📄 package.json                 # Dependencies & scripts
+│   ├── 📄 openapi.yaml                 # API specification
+│   ├── 📁 models/
+│   │   └── 📄 Service.js               # Service model definition
+│   └── 📄 Dockerfile                   # Container configuration
+│
 ├── 📁 Token-getter/                    # OAuth2 Token Acquisition Scripts
 │   ├── 📄 get-oauth-token.bat          # Windows batch script
 │   ├── 📄 get-oauth-token.ps1          # PowerShell script
-│   ├── 📄 get-token.bat                # Alternative batch script
-│   ├── 📄 OAUTH2_GUIDE.md              # OAuth2 authentication guide
-│   └── 📄 TOKEN_SCRIPTS_README.md      # Token scripts documentation
+│   └── 📄 get-token.bat                # Alternative batch script
 │
 ├── 📄 docker-compose.yml               # Multi-service orchestration
+├── 📄 SOA-Microservices-Postman-Collection.json # Postman test collection
+├── 📄 TESTING_GUIDE.md                 # Comprehensive testing instructions
 ├── 📄 README.md                        # This comprehensive guide
-├── 📄 ENDPOINTS_SUMMARY.md             # API endpoint reference
-├── 📄 SWAGGER_REFERENCE.md             # Swagger UI usage guide
 ├── 📄 .gitignore                       # Git ignore rules
 └── 📄 .gitattributes                   # Git attributes
 ```
@@ -343,391 +354,38 @@ SOA-MicroService/
 | **Orchestrator** | http://localhost:3003/health | Service health status |
 | **Catalog** | http://localhost:8080/ | Service health status |
 
-## 🧪 **Testing Guide - Postman & SoapUI**
+## 🧪 **Testing Guide**
 
 ### **📋 Testing Overview**
-This guide focuses on testing the SOA microservices using **Postman** for REST API testing and **SoapUI** for SOAP web service testing.
+For comprehensive testing instructions, please refer to the **[TESTING_GUIDE.md](TESTING_GUIDE.md)** file, which contains detailed step-by-step instructions for:
 
-### **🔧 Prerequisites for Testing**
-- **Postman** installed and running
-- **SoapUI** installed and running
-- **All Docker services** running (`docker compose ps`)
-- **Services accessible** on their respective ports
+- **Service Health Checks** - Verify all services are running
+- **OAuth2 Authentication** - Get and use JWT tokens
+- **UDDI Service Discovery** - Test service registry functionality
+- **Postman Testing** - Complete REST API testing with importable collection
+- **SoapUI Testing** - SOAP web service testing for Catalog service
+- **Complete Workflow Testing** - End-to-end order processing validation
+- **Troubleshooting** - Common issues and solutions
 
----
+### **🚀 Quick Test Start**
+```bash
+# 1. Start all services
+docker compose up -d
 
-## 📮 **Postman Testing**
+# 2. Get OAuth2 token
+cd Token-getter
+get-token.bat
 
-### **Step 1: Setup Postman Environment**
+# 3. Import Postman collection
+# Open Postman → Import → Select SOA-Microservices-Postman-Collection.json
 
-#### **Create Environment**
-1. Open Postman
-2. Click **"Environment"** → **"Create Environment"**
-3. Name: `SOA Microservices`
-4. Add these variables:
-
-| Variable | Initial Value | Current Value |
-|----------|---------------|---------------|
-| `base_url` | `http://localhost` | `http://localhost` |
-| `jwt_token` | `YOUR_JWT_TOKEN_HERE` | `YOUR_JWT_TOKEN_HERE` |
-| `order_id` | `test-order-123` | `test-order-123` |
-
-5. **Save** and **Select** the environment
-
-### **Step 2: Health Check Testing**
-
-#### **Create Health Check Requests**
-
-**Orders Service Health Check:**
-- **Method**: `GET`
-- **URL**: `{{base_url}}:3000/health`
-- **Expected Response**: `{"status":"healthy","service":"Orders Service"}`
-
-**Payments Service Health Check:**
-- **Method**: `GET`
-- **URL**: `{{base_url}}:3001/health`
-- **Expected Response**: `{"status":"healthy","service":"Payments Service"}`
-
-**Shipping Service Health Check:**
-- **Method**: `GET`
-- **URL**: `{{base_url}}:3002/health`
-- **Expected Response**: `{"status":"healthy","service":"Shipping Service"}`
-
-**Orchestrator Service Health Check:**
-- **Method**: `GET`
-- **URL**: `{{base_url}}:3003/health`
-- **Expected Response**: `{"status":"healthy","service":"Orchestrator Service"}`
-
-**Catalog Service Health Check:**
-- **Method**: `GET`
-- **URL**: `{{base_url}}:8080/`
-- **Expected Response**: Service status page
-
-### **Step 3: OAuth2 Authentication Testing**
-
-#### **Get Authorization Code**
-- **Method**: `GET`
-- **URL**: `{{base_url}}:3003/oauth/authorize?client_id=orders-service-client&redirect_uri=http://localhost:3000/auth/callback&scope=read%20write&response_type=code`
-- **Note**: Copy the authorization code from the redirect URL
-
-#### **Exchange Code for Token**
-- **Method**: `POST`
-- **URL**: `{{base_url}}:3003/oauth/token`
-- **Headers**:
-  ```
-  Content-Type: application/json
-  ```
-- **Body** (raw JSON):
-  ```json
-  {
-    "grant_type": "authorization_code",
-    "code": "YOUR_AUTH_CODE_HERE",
-    "client_id": "orders-service-client",
-    "client_secret": "orders-service-secret",
-    "redirect_uri": "http://localhost:3000/auth/callback"
-  }
-  ```
-- **Expected Response**: Contains `jwt_token` - copy this value
-- **Action**: Set the `jwt_token` environment variable
-
-### **Step 4: Complete Order Workflow Testing**
-
-#### **Create Order**
-- **Method**: `POST`
-- **URL**: `{{base_url}}:3000/orders`
-- **Headers**:
-  ```
-  Authorization: Bearer {{jwt_token}}
-  Content-Type: application/json
-  ```
-- **Body** (raw JSON):
-  ```json
-  {
-    "id": "{{order_id}}",
-    "item": "The Great Gatsby",
-    "quantity": 2,
-    "customerName": "John Doe",
-    "shippingAddress": {
-      "street": "123 Main St",
-      "city": "New York",
-      "zipCode": "10001"
-    }
-  }
-  ```
-- **Expected Response**: `"Order test-order-123 saved and initiation request sent to Orchestrator"`
-
-#### **Check Workflow Status (Wait 15-20 seconds first)**
-- **Method**: `GET`
-- **URL**: `{{base_url}}:3003/workflow-status/{{order_id}}`
-- **Headers**:
-  ```
-  Authorization: Bearer {{jwt_token}}
-  ```
-- **Expected Response**:
-  ```json
-  {
-    "orderId": "test-order-123",
-    "details": {
-      "order": {
-        "id": "test-order-123",
-        "item": "The Great Gatsby",
-        "quantity": 2,
-        "customerName": "John Doe",
-        "status": "pending"
-      },
-      "payment": {
-        "orderId": "test-order-123",
-        "paymentId": "PAY-12345",
-        "amount": 200,
-        "status": "completed"
-      },
-      "shipping": {
-        "orderId": "test-order-123",
-        "shippingId": "SHIP-67890",
-        "status": "shipped"
-      }
-    }
-  }
-  ```
-
-#### **Check Individual Service Data**
-
-**Get Order Details:**
-- **Method**: `GET`
-- **URL**: `{{base_url}}:3000/orders/{{order_id}}`
-- **Headers**: `Authorization: Bearer {{jwt_token}}`
-
-**Get Payment Details:**
-- **Method**: `GET`
-- **URL**: `{{base_url}}:3001/payments/{{order_id}}`
-- **Headers**: `Authorization: Bearer {{jwt_token}}`
-
-**Get Shipping Details:**
-- **Method**: `GET`
-- **URL**: `{{base_url}}:3002/shipping/{{order_id}}`
-- **Headers**: `Authorization: Bearer {{jwt_token}}`
-
-### **Step 5: Postman Test Scripts**
-
-#### **Add Test Scripts for Order Creation**
-In the **Tests** tab of the Create Order request:
-```javascript
-// Test if order was created successfully
-pm.test("Order created successfully", function () {
-    pm.response.to.have.status(200);
-    pm.expect(pm.response.text()).to.include("saved and initiation request sent");
-});
-
-// Extract order ID for future requests
-if (pm.response.code === 200) {
-    const responseText = pm.response.text();
-    const orderIdMatch = responseText.match(/Order (\w+) saved/);
-    if (orderIdMatch) {
-        pm.environment.set("order_id", orderIdMatch[1]);
-    }
-}
+# 4. Follow detailed instructions in TESTING_GUIDE.md
 ```
 
-#### **Add Test Scripts for Workflow Status**
-In the **Tests** tab of the Workflow Status request:
-```javascript
-// Test workflow status response
-pm.test("Workflow status retrieved", function () {
-    pm.response.to.have.status(200);
-    const jsonData = pm.response.json();
-    pm.expect(jsonData).to.have.property('orderId');
-    pm.expect(jsonData).to.have.property('details');
-});
-
-// Test if all stages are completed
-pm.test("All workflow stages completed", function () {
-    const jsonData = pm.response.json();
-    const details = jsonData.details;
-    
-    if (details.payment) {
-        pm.expect(details.payment.status).to.be.oneOf(['completed', 'failed']);
-    }
-    
-    if (details.shipping) {
-        pm.expect(details.shipping.status).to.be.oneOf(['shipped', 'failed']);
-    }
-});
-```
-
----
-
-## 🧪 **SoapUI Testing - Catalog Service**
-
-### **Step 1: Import SoapUI Project**
-
-#### **Import Existing Project**
-1. Open **SoapUI**
-2. Go to **File** → **Import Project**
-3. Navigate to: `CatalogService/SoapUI_Tests/CatalogService-Live-WSDL-Project-soapui-project.xml`
-4. Click **Open**
-5. The project will be imported with all pre-configured requests
-
-#### **Alternative: Create New Project from WSDL**
-1. Open **SoapUI**
-2. Go to **File** → **New SOAP Project**
-3. **Project Name**: `CatalogService Testing`
-4. **Initial WSDL**: `http://localhost:8080/CatalogService/CatalogService?wsdl`
-5. Click **OK**
-
-### **Step 2: Test SOAP Operations**
-
-#### **Test 1: Get All Products**
-1. Navigate to: **CatalogService** → **CatalogServiceImplPortBinding** → **getAllProducts**
-2. Double-click on **Request 1**
-3. **SOAP Request**:
-   ```xml
-   <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cat="http://catalog.globalbooks/">
-      <soapenv:Header/>
-      <soapenv:Body>
-         <cat:getAllProducts/>
-      </soapenv:Body>
-   </soapenv:Envelope>
-   ```
-4. Click **Submit** (▶️)
-5. **Expected Response**: List of existing products
-
-#### **Test 2: Get Product by ID**
-1. Navigate to: **getProduct** → **Request 1**
-2. **SOAP Request**:
-   ```xml
-   <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cat="http://catalog.globalbooks/">
-      <soapenv:Header/>
-      <soapenv:Body>
-         <cat:getProduct>
-            <id>1</id>
-         </cat:getProduct>
-      </soapenv:Body>
-   </soapenv:Envelope>
-   ```
-3. Click **Submit**
-4. **Expected Response**: Product details for ID "1"
-
-#### **Test 3: Add New Product**
-1. Navigate to: **addProduct** → **Request 1**
-2. **SOAP Request**:
-   ```xml
-   <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cat="http://catalog.globalbooks/">
-      <soapenv:Header/>
-      <soapenv:Body>
-         <cat:addProduct>
-            <product>
-               <description>A thrilling fantasy novel about dragons.</description>
-               <id>3</id>
-               <name>Dragon's Breath</name>
-               <price>22.50</price>
-               <quantity>50</quantity>
-            </product>
-         </cat:addProduct>
-      </soapenv:Body>
-   </soapenv:Envelope>
-   ```
-3. Click **Submit**
-4. **Expected Response**: `"Product Dragon's Breath added successfully."`
-
-#### **Test 4: Update Product**
-1. Navigate to: **updateProduct** → **Request 1**
-2. **SOAP Request**:
-   ```xml
-   <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cat="http://catalog.globalbooks/">
-      <soapenv:Header/>
-      <soapenv:Body>
-         <cat:updateProduct>
-            <product>
-               <description>Updated description for The Lord of the Rings</description>
-               <id>1</id>
-               <name>The Lord of the Rings</name>
-               <price>27.50</price>
-               <quantity>120</quantity>
-            </product>
-         </cat:updateProduct>
-      </soapenv:Body>
-   </soapenv:Envelope>
-   ```
-3. Click **Submit**
-4. **Expected Response**: `"Product The Lord of the Rings updated successfully."`
-
-#### **Test 5: Delete Product**
-1. Navigate to: **deleteProduct** → **Request 1**
-2. **SOAP Request**:
-   ```xml
-   <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cat="http://catalog.globalbooks/">
-      <soapenv:Header/>
-      <soapenv:Body>
-         <cat:deleteProduct>
-            <id>3</id>
-         </cat:deleteProduct>
-      </soapenv:Body>
-   </soapenv:Envelope>
-   ```
-3. Click **Submit**
-4. **Expected Response**: `"Product with ID 3 deleted successfully."`
-
-### **Step 3: SoapUI Test Suite Setup**
-
-#### **Create Test Suite**
-1. Right-click on **CatalogService** project
-2. Select **"New TestSuite"**
-3. Name: `CatalogService Test Suite`
-
-#### **Add Test Cases**
-1. Right-click on Test Suite
-2. Select **"New TestCase"**
-3. Name: `Product CRUD Test`
-4. Add test steps:
-   - **Step 1**: getAllProducts
-   - **Step 2**: addProduct
-   - **Step 3**: getProduct (verify addition)
-   - **Step 4**: updateProduct
-   - **Step 5**: getProduct (verify update)
-   - **Step 6**: deleteProduct
-   - **Step 7**: getAllProducts (verify deletion)
-
-#### **Add Assertions**
-For each request, add assertions:
-1. Right-click on request
-2. Select **"Add Assertion"**
-3. Choose assertion type:
-   - **SOAP Response** - Valid SOAP response
-   - **XPath Match** - Specific values
-   - **Response SLA** - Response time
-   - **HTTP Status** - Status code 200
-
-**Example XPath Assertion**:
-```xpath
-//return[contains(text(), 'successfully')]
-```
-
----
-
-## 🎯 **Complete Testing Workflow**
-
-### **Testing Sequence**
-1. **Start Services**: `docker compose up -d`
-2. **Health Checks**: Test all services in Postman
-3. **OAuth2 Setup**: Get JWT token in Postman
-4. **Order Workflow**: Create order and monitor status
-5. **SOAP Testing**: Test catalog operations in SoapUI
-6. **Verification**: Check data persistence across services
-
-### **Expected Results**
-- ✅ All health checks return 200 status
-- ✅ OAuth2 token obtained successfully
-- ✅ Order created and processed automatically
-- ✅ Payment and shipping completed (90% success rate)
-- ✅ Catalog stock updated automatically
-- ✅ All SOAP operations work correctly
-- ✅ Data persisted in respective databases
-
-### **Testing Tips**
-- **Wait 15-20 seconds** between order creation and status check
-- **Use unique order IDs** to avoid conflicts
-- **Check RabbitMQ queues** at http://localhost:15672 for message flow
-- **Monitor service logs** for debugging: `docker compose logs -f`
+### **📁 Testing Files**
+- **`TESTING_GUIDE.md`** - Complete testing instructions
+- **`SOA-Microservices-Postman-Collection.json`** - Importable Postman collection
+- **`CatalogService/SoapUI_Tests/`** - SoapUI test project for Catalog service
 
 ## 🐳 **Docker Commands**
 
@@ -808,104 +466,38 @@ docker compose config
 
 ## 🚨 **Troubleshooting**
 
-### **Common Issues and Solutions**
+### **Quick Fixes**
 
-#### **1. Docker Compose Command Not Found**
+#### **Docker Issues**
 ```bash
-# Error: docker-compose: command not found
-# Solution: Use modern Docker Compose syntax
-docker compose up -d  # Instead of docker-compose up -d
+# Services not starting
+docker compose ps
+docker compose restart
+
+# Build failures
+docker system prune -a -f
+docker compose build --no-cache
+docker compose up -d
+
+# Port conflicts
+netstat -ano | findstr :3000
+taskkill /PID <PID> /F
 ```
 
-#### **2. Services Not Starting**
+#### **Service Issues**
 ```bash
 # Check service status
 docker compose ps
 
-# Check logs for errors
-docker compose logs
-
-# Restart services
-docker compose restart
-```
-
-#### **3. Port Already in Use**
-```bash
-# Check what's using the ports
-netstat -ano | findstr :3000
-netstat -ano | findstr :3001
-netstat -ano | findstr :3002
-netstat -ano | findstr :3003
-netstat -ano | findstr :8080
-
-# Kill processes using those ports
-taskkill /PID <PID> /F
-```
-
-#### **4. Connection Refused Errors**
-```bash
-# Check if Docker Desktop is running
-# Check service logs
-docker compose logs orchestrator
-docker compose logs orders
-docker compose logs payments
-docker compose logs shipping
-docker compose logs catalog
-```
-
-#### **5. Build Failures**
-```bash
-# Clean Docker system
-docker system prune -a -f
-
-# Rebuild with no cache
-docker compose build --no-cache
-
-# Start services
-docker compose up -d
-```
-
-#### **6. OAuth2 Authentication Issues**
-- Verify JWT token is valid and not expired
-- Check Authorization header format: `Bearer <token>`
-- Ensure proper scope permissions
-- Check Orchestrator service logs
-
-#### **7. Workflow Not Processing**
-- Wait 15-20 seconds after creating order
-- Check RabbitMQ queues at http://localhost:15672
-- Verify all services are running
-- Check service logs for errors
-
-### **Debug Commands**
-```bash
-# Check all service status
-docker compose ps
-
-# View real-time logs
+# View logs
 docker compose logs -f
 
-# Check specific service logs
-docker compose logs -f [service-name]
-
-# Check RabbitMQ status
-docker exec -it soa-rabbitmq-1 rabbitmqctl status
-
-# Test service connectivity
+# Test connectivity
 curl http://localhost:3003/health
 ```
 
-### **Performance Issues**
-```bash
-# Check container resource usage
-docker stats
-
-# Check disk space
-docker system df
-
-# Clean up unused resources
-docker system prune -a -f
-```
+### **Detailed Troubleshooting**
+For comprehensive troubleshooting including OAuth2, UDDI, and testing issues, please refer to the **[TESTING_GUIDE.md](TESTING_GUIDE.md)** file.
 
 ## 🔄 **Order Workflow**
 
