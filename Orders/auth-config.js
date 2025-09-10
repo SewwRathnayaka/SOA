@@ -96,7 +96,7 @@ const hasScope = (requiredScope) => {
         }
         
         const userScopes = req.user.scope ? req.user.scope.split(' ') : [];
-        if (userScopes.includes(requiredScope) || userScopes.includes('admin')) {
+        if (userScopes.includes(requiredScope)) {
             next();
         } else {
             res.status(403).json({ error: 'Forbidden - Insufficient permissions' });

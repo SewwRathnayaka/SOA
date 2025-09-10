@@ -303,32 +303,6 @@
 						"description": "Get order details by ID (requires read scope)"
 					},
 					"response": []
-				},
-				{
-					"name": "Get All Orders (Admin)",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{accessToken}}",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "http://localhost:3000/orders",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "3000",
-							"path": [
-								"orders"
-							]
-						},
-						"description": "Get all orders (requires admin scope)"
-					},
-					"response": []
 				}
 			],
 			"description": "Test Orders service endpoints"
@@ -362,32 +336,6 @@
 						"description": "Get payment details by Order ID (requires read scope)"
 					},
 					"response": []
-				},
-				{
-					"name": "Get All Payments (Admin)",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{accessToken}}",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "http://localhost:3001/payments",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "3001",
-							"path": [
-								"payments"
-							]
-						},
-						"description": "Get all payments (requires admin scope)"
-					},
-					"response": []
 				}
 			],
 			"description": "Test Payments service endpoints"
@@ -419,32 +367,6 @@
 							]
 						},
 						"description": "Get shipping details by Order ID (requires read scope)"
-					},
-					"response": []
-				},
-				{
-					"name": "Get All Shipping (Admin)",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{accessToken}}",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "http://localhost:3002/shipping",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "3002",
-							"path": [
-								"shipping"
-							]
-						},
-						"description": "Get all shipping records (requires admin scope)"
 					},
 					"response": []
 				}

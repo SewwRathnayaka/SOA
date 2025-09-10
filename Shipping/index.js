@@ -1,9 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const amqp = require('amqplib');
-const swaggerUi = require('swagger-ui-express');
-const YAML = require('yamljs');
-const swaggerDocument = YAML.load('./openapi.yaml');
 const session = require('express-session');
 const cors = require('cors');
 
@@ -77,8 +74,6 @@ app.use(session({
 // Initialize Passport
 app.use(passport.initialize());
 
-// Swagger UI
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // RabbitMQ Connection
 let channel, connection;
@@ -261,13 +256,3 @@ app.post('/shipping', isAuthenticated, hasScope('write'), async (req, res) => {
     }
 });
 
-// Get all shipping records (admin scope required)
-app.get('/shipping', isAuthenticated, hasScope('admin'), async (req, res) => {
-    try {
-        const shippingRecords = await Shipping.find({}).sort({ createdAt: -1 });
-        res.status(200).json(shippingRecords);
-    } catch (error) {
-        console.error('Error fetching shipping records:', error);
-        res.status(500).send('Internal Server Error');
-    }
-});

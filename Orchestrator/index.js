@@ -17,6 +17,9 @@ const {
 // Import UDDI client for dynamic service discovery
 const OrchestratorUDDIClient = require('./uddi-client');
 
+// Import BPEL Engine
+const BPELEngine = require('./bpel-engine');
+
 const app = express();
 const port = 3003;
 
@@ -33,27 +36,15 @@ app.use(session({
 app.use(passport.initialize());
 
 // API Documentation endpoint
-app.get('/api-docs', (req, res) => {
-    res.json({
-        message: 'Orchestrator Service API',
-        endpoints: {
-            'GET /': 'Service status',
-            'GET /health': 'Health check',
-            'POST /place-order': 'Place a new order (requires write scope)',
-            'GET /workflow-status/:orderId': 'Check order workflow status (requires read scope)',
-            'PUT /update-catalog-stock/:productId': 'Update catalog stock (requires write scope)',
-            'GET /oauth/authorize': 'OAuth2 authorization endpoint',
-            'POST /oauth/token': 'OAuth2 token endpoint',
-            'GET /oauth/clients': 'List OAuth2 clients (requires admin scope)'
-        }
-    });
-});
 
 let channel, connection;
 const rabbitmq_url = 'amqp://172.18.0.5:5672';
 
 // Initialize UDDI client for dynamic service discovery
 const uddiClient = new OrchestratorUDDIClient();
+
+// Initialize BPEL Engine
+const bpelEngine = new BPELEngine();
 
 // Auto-register with UDDI Registry
 async function registerWithUDDI() {
@@ -249,27 +240,41 @@ async function connectRabbitMQ() {
 
 connectRabbitMQ();
 
-// Orchestrator endpoint to initiate an order (optional, can be triggered by Orders service)
+// Orchestrator endpoint to initiate an order using BPEL workflow
 app.post('/place-order', isAuthenticated, hasScope('write'), async (req, res) => {
     const order = req.body;
     
     try {
-        // Step 1: Create the order in the Orders service database first
-        console.log(`Creating order ${order.id} in Orders service...`);
-        const orderResponse = await makeAuthenticatedRequest(`http://orders:3000/orders`, 'POST', order);
-        console.log(`Order ${order.id} created successfully in Orders service`);
+        console.log(`[BPEL] Starting PlaceOrder workflow for order: ${order.id}`);
         
-        // Step 2: Send to RabbitMQ for workflow processing
+        // Execute the PlaceOrder BPEL workflow
+        const workflowResult = await bpelEngine.executeWorkflow('PlaceOrder', order);
+        
+        if (workflowResult.status === 'completed') {
+            console.log(`[BPEL] PlaceOrder workflow completed successfully for order: ${order.id}`);
+            
+            // Also send to RabbitMQ for backward compatibility with existing services
         if (channel) {
             channel.sendToQueue('order_initiation_queue', Buffer.from(JSON.stringify(order)));
-            console.log(`Order ${order.id} sent to RabbitMQ for workflow processing`);
-            return res.status(200).send(`Order ${order.id} created and initiation request sent to orchestrator.`);
+                console.log(`Order ${order.id} also sent to RabbitMQ for legacy workflow processing`);
+            }
+            
+            return res.status(200).json({
+                message: `Order ${order.id} processed successfully using BPEL workflow`,
+                workflowExecutionId: workflowResult.executionId,
+                result: workflowResult.result,
+                duration: workflowResult.duration
+            });
         } else {
-            return res.status(500).send('Orchestrator failed to connect to RabbitMQ.');
+            console.error(`[BPEL] PlaceOrder workflow failed for order: ${order.id} - ${workflowResult.error}`);
+            return res.status(500).json({
+                error: `Order processing failed: ${workflowResult.error}`,
+                workflowExecutionId: workflowResult.executionId
+            });
         }
     } catch (error) {
-        console.error(`Error creating order ${order.id}:`, error.message);
-        return res.status(500).send(`Failed to create order: ${error.message}`);
+        console.error(`[BPEL] Error processing order ${order.id}:`, error.message);
+        return res.status(500).json({ error: `Failed to process order: ${error.message}` });
     }
 });
 
@@ -350,12 +355,92 @@ app.get('/health', (req, res) => {
     });
 });
 
-// OAuth2 Client Management (admin only)
-app.get('/oauth/clients', isAuthenticated, hasScope('admin'), (req, res) => {
+
+// BPEL Workflow Management Endpoints
+
+// List available BPEL workflows
+app.get('/bpel/workflows', isAuthenticated, hasScope('read'), (req, res) => {
+    try {
+        const workflows = bpelEngine.getAvailableWorkflows();
+        res.json({
+            message: 'Available BPEL workflows',
+            workflows: workflows
+        });
+    } catch (error) {
+        res.status(500).json({ error: `Failed to list workflows: ${error.message}` });
+    }
+});
+
+// Get BPEL workflow definition
+app.get('/bpel/workflows/:name', isAuthenticated, hasScope('read'), (req, res) => {
+    try {
+        const workflowName = req.params.name;
+        const workflow = bpelEngine.getWorkflowDefinition(workflowName);
+        
+        if (!workflow) {
+            return res.status(404).json({ error: `Workflow ${workflowName} not found` });
+        }
+        
+        res.json({
+            message: `BPEL workflow definition: ${workflowName}`,
+            workflow: workflow
+        });
+    } catch (error) {
+        res.status(500).json({ error: `Failed to get workflow: ${error.message}` });
+    }
+});
+
+// Execute BPEL workflow
+app.post('/bpel/workflows/:name/execute', isAuthenticated, hasScope('write'), async (req, res) => {
+    try {
+        const workflowName = req.params.name;
+        const inputData = req.body;
+        
+        console.log(`[BPEL] Executing workflow: ${workflowName}`);
+        console.log(`[BPEL] Input data:`, inputData);
+        
+        const result = await bpelEngine.executeWorkflow(workflowName, inputData);
+        
+        res.json({
+            message: `BPEL workflow ${workflowName} execution completed`,
+            result: result
+        });
+    } catch (error) {
+        console.error(`[BPEL] Workflow execution failed:`, error);
+        res.status(500).json({ error: `Workflow execution failed: ${error.message}` });
+    }
+});
+
+// List BPEL workflow executions
+app.get('/bpel/executions', isAuthenticated, hasScope('read'), (req, res) => {
+    try {
+        const executions = bpelEngine.getAllExecutions();
+        res.json({
+            message: 'BPEL workflow executions',
+            executions: executions
+        });
+    } catch (error) {
+        res.status(500).json({ error: `Failed to list executions: ${error.message}` });
+    }
+});
+
+// Get BPEL execution status
+app.get('/bpel/executions/:id', isAuthenticated, hasScope('read'), (req, res) => {
+    try {
+        const executionId = req.params.id;
+        const execution = bpelEngine.getExecutionStatus(executionId);
+        
+        if (!execution) {
+            return res.status(404).json({ error: `Execution ${executionId} not found` });
+        }
+        
     res.json({
-        message: 'OAuth2 clients registered',
-        clients: Object.keys(require('./oauth-server').clients || {})
+            message: `BPEL execution status: ${executionId}`,
+            execution: execution
     });
+    } catch (error) {
+        res.status(500).json({ error: `Failed to get execution status: ${error.message}` });
+    }
 });
 
 app.listen(port, () => {

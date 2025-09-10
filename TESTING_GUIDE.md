@@ -1,220 +1,188 @@
 # 🧪 **SOA Microservices Testing Guide**
 
-A comprehensive testing guide for the SOA Microservices architecture with detailed instructions for Postman and SoapUI testing.
+This guide provides step-by-step instructions for testing all components of the SOA microservices architecture.
 
-## 📋 **Table of Contents**
+## 📋 **Testing Overview**
 
-- [Prerequisites](#-prerequisites)
-- [Quick Start](#-quick-start)
-- [Service Health Checks](#-service-health-checks)
-- [OAuth2 Authentication](#-oauth2-authentication)
-- [UDDI Service Discovery](#-uddi-service-discovery)
-- [Postman Testing](#-postman-testing)
-- [SoapUI Testing](#-soapui-testing)
-- [Complete Workflow Testing](#-complete-workflow-testing)
-- [Troubleshooting](#-troubleshooting)
+### **Testing Tools**
+- **Postman**: REST API testing for all services
+- **SoapUI**: SOAP web service testing for Catalog service
+- **cURL**: Command-line testing for governance and health checks
+- **Batch Scripts**: OAuth2 token acquisition
 
-## 🔧 **Prerequisites**
+### **Testing Order**
+1. **Health Checks** - Verify all services are running
+2. **OAuth2 Authentication** - Get JWT tokens
+3. **Service Discovery** - Test UDDI Registry
+4. **Order Workflow** - Complete end-to-end testing
+5. **Catalog Service** - SOAP and REST API testing
+6. **Governance Framework** - System governance testing
 
-### **Required Software**
-- **Docker Desktop** (v4.0+) - [Download here](https://www.docker.com/products/docker-desktop/)
-- **Postman** - [Download here](https://www.postman.com/downloads/)
-- **SoapUI** - [Download here](https://www.soapui.org/downloads/soapui.html)
-
-### **System Requirements**
-- **Windows 10/11** (64-bit)
-- **8GB RAM** minimum (16GB recommended)
-- **10GB free disk space**
-- **Internet connection** for downloading Docker images
-
-## 🚀 **Quick Start**
+## 🚀 **Quick Start Testing**
 
 ### **Step 1: Start All Services**
 ```bash
-# Navigate to project root directory
-cd SOA-MicroService
-
 # Start all services
 docker compose up -d
 
-# Check service status
+# Verify all services are running
 docker compose ps
+
+# Expected: All 9 services should be "Up"
 ```
 
-**Expected Output**: All 9 services should be "Up"
-- UDDI Registry (Port 3004)
-- Orders Service (Port 3000)
-- Payments Service (Port 3001)
-- Shipping Service (Port 3002)
-- Orchestrator Service (Port 3003)
-- Catalog Service (Port 8080)
-- RabbitMQ (Ports 5672, 15672)
-- MongoDB Databases (Ports 27017-27020)
-
-### **Step 2: Wait for Services to Initialize**
+### **Step 2: Get OAuth2 Token**
 ```bash
-# Wait 30-60 seconds for all services to start and register
-# Check logs if needed
-docker compose logs -f
+# Navigate to token directory
+cd Token-getter
+
+# Run the batch file to get JWT token
+get-token.bat
+
+# Copy the access_token from the response
 ```
 
-## 🏥 **Service Health Checks**
-
-### **Health Check via Postman**
+### **Step 3: Import Postman Collection**
 1. Open Postman
-2. Import the `SOA-Microservices-Postman-Collection.json` collection
-3. Run the health check requests in the "1. Service Health Checks" folder:
+2. Click **Import**
+3. Select `SOA-Microservices-Postman-Collection.json`
+4. Set the `accessToken` variable with your JWT token
 
-#### **Health Check Requests:**
-- **UDDI Registry Health** → `GET http://localhost:3004/health`
-- **Orders Health** → `GET http://localhost:3000/health`
-- **Payments Health** → `GET http://localhost:3001/health`
-- **Shipping Health** → `GET http://localhost:3002/health`
-- **Orchestrator Health** → `GET http://localhost:3003/health`
+## 🏥 **1. Health Checks Testing**
 
-**Expected Response**: All should return `200 OK` with healthy status
+### **Postman Tests**
+Run these tests to verify all services are healthy:
 
-## 🔐 **OAuth2 Authentication**
+| Service | Endpoint | Expected Response |
+|---------|----------|-------------------|
+| **Orders** | `GET http://localhost:3000/health` | `{"status": "healthy", "service": "Orders Service"}` |
+| **Payments** | `GET http://localhost:3001/health` | `{"status": "healthy", "service": "Payments Service"}` |
+| **Shipping** | `GET http://localhost:3002/health` | `{"status": "healthy", "service": "Shipping Service"}` |
+| **Orchestrator** | `GET http://localhost:3003/health` | `{"status": "healthy", "service": "Orchestrator Service"}` |
+| **UDDI Registry** | `GET http://localhost:3004/health` | `{"status": "healthy", "service": "UDDI Registry"}` |
+| **Catalog** | `GET http://localhost:8080/` | HTML response with service info |
 
-### **Step 1: Get OAuth2 Token**
-1. Navigate to the `Token-getter` folder
-2. Run the batch file: `get-token.bat`
-3. Follow the on-screen instructions
-4. Copy the JWT token from the output
+### **cURL Commands**
+```bash
+# Test all health endpoints
+curl http://localhost:3000/health
+curl http://localhost:3001/health
+curl http://localhost:3002/health
+curl http://localhost:3003/health
+curl http://localhost:3004/health
+curl http://localhost:8080/
+```
 
-### **Step 2: Use Token in Postman**
-1. Open Postman
-2. Go to **Collection Variables** in the imported collection
-3. Set `accessToken` variable to your JWT token
-4. All requests will automatically use this token via the `{{accessToken}}` variable
+## 🔐 **2. OAuth2 Authentication Testing**
 
-### **Token Format**
-- JWT tokens start with `eyJ`
-- Tokens expire in 24 hours
-- Format: `Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
+### **Method 1: Batch Script (Recommended)**
+```bash
+# Navigate to token directory
+cd Token-getter
 
-## 🔍 **UDDI Service Discovery**
+# Run the batch file
+get-token.bat
 
-### **Test UDDI Registry Functionality via Postman**
+# Expected output:
+# {
+#   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+#   "token_type": "Bearer",
+#   "expires_in": 3600,
+#   "scope": "read write"
+# }
+```
 
-#### **1. Check UDDI Registry Health**
-- **Request**: UDDI Registry Health (from Health Checks folder)
-- **Method**: `GET`
-- **URL**: `http://localhost:3004/health`
-- **Expected**: `200 OK` with healthy status
+### **Method 2: Postman OAuth2 Flow**
+1. **Get Authorization Code**:
+   - `GET http://localhost:3003/oauth/authorize?response_type=code&client_id=orders-service-client&redirect_uri=http://localhost:3000/auth/callback&scope=read write`
 
-#### **2. Get All Registered Services**
-- **Request**: Get All Services (from UDDI Registry Tests folder)
-- **Method**: `GET`
-- **URL**: `http://localhost:3004/api/services`
-- **Expected**: Array of 4 registered services
+2. **Exchange for Token**:
+   - `POST http://localhost:3003/oauth/token`
+   - Body: `grant_type=authorization_code&code=test-code&client_id=orders-service-client&client_secret=orders-service-secret&redirect_uri=http://localhost:3000/auth/callback`
 
-#### **3. Get Specific Service Details**
-- **Orders Service** → `GET http://localhost:3004/api/services/orders-service`
-- **Payments Service** → `GET http://localhost:3004/api/services/payments-service`
-- **Shipping Service** → `GET http://localhost:3004/api/services/shipping-service`
-- **Orchestrator Service** → `GET http://localhost:3004/api/services/orchestrator-service`
+### **Method 3: cURL Commands**
+```bash
+# Get authorization code
+curl "http://localhost:3003/oauth/authorize?response_type=code&client_id=orders-service-client&redirect_uri=http://localhost:3000/auth/callback&scope=read write"
 
-### **Expected UDDI Response**
+# Exchange for token
+curl -X POST http://localhost:3003/oauth/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=authorization_code&code=test-code&client_id=orders-service-client&client_secret=orders-service-secret&redirect_uri=http://localhost:3000/auth/callback"
+```
+
+## 🔍 **3. Service Discovery Testing (UDDI Registry)**
+
+### **Postman Tests**
+
+#### **Register a Service**
+- **Method**: `POST`
+- **URL**: `http://localhost:3004/api/services/register`
+- **Headers**: `Content-Type: application/json`
+- **Body**:
 ```json
 {
-  "serviceId": "orders-service",
-  "name": "Orders Service",
-  "category": "order-management",
-  "provider": "SOA-Microservices",
-  "description": "Order management and CRUD operations",
+  "serviceId": "test-service",
+  "name": "Test Service",
+  "category": "test",
+  "provider": "Test Provider",
+  "description": "Test service for discovery",
   "version": "1.0.0",
   "interfaces": [
     {
       "type": "REST",
-      "endpoint": "http://orders:3000",
+      "endpoint": "http://localhost:3000",
       "operations": ["GET", "POST"]
     }
-  ],
-  "status": "active",
-  "lastHeartbeat": "2024-01-01T12:00:00.000Z"
+  ]
 }
 ```
 
-## 📮 **Postman Testing**
+#### **List All Services**
+- **Method**: `GET`
+- **URL**: `http://localhost:3004/api/services`
+- **Expected**: List of registered services
 
-### **Step 1: Import Postman Collection**
-1. Open Postman
-2. Click **Import** button
-3. Select `SOA-Microservices-Postman-Collection.json`
-4. The collection will be imported with all pre-configured requests
+#### **Get Service by ID**
+- **Method**: `GET`
+- **URL**: `http://localhost:3004/api/services/{serviceId}`
+- **Expected**: Service details
 
-### **Step 2: Set Environment Variables**
-1. In Postman, go to **Collection Variables**
-2. Set the following variables:
-   - `baseUrl`: `http://localhost`
-   - `accessToken`: `your-jwt-token-here`
-   - `orderId`: `(will be set automatically)`
+### **cURL Commands**
+```bash
+# Register a service
+curl -X POST http://localhost:3004/api/services/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "serviceId": "test-service",
+    "name": "Test Service",
+    "category": "test",
+    "provider": "Test Provider",
+    "description": "Test service for discovery",
+    "version": "1.0.0",
+    "interfaces": [{"type": "REST", "endpoint": "http://localhost:3000", "operations": ["GET", "POST"]}]
+  }'
 
-### **Step 3: Test Service Health**
-Run these requests from the "1. Service Health Checks" folder in order:
+# List all services
+curl http://localhost:3004/api/services
 
-1. **UDDI Registry Health**
-   - Method: `GET`
-   - URL: `{{baseUrl}}:3004/health`
-   - Expected: `200 OK`
+# Get specific service
+curl http://localhost:3004/api/services/test-service
+```
 
-2. **Orders Health**
-   - Method: `GET`
-   - URL: `{{baseUrl}}:3000/health`
-   - Expected: `200 OK`
+## 📦 **4. Order Workflow Testing**
 
-3. **Payments Health**
-   - Method: `GET`
-   - URL: `{{baseUrl}}:3001/health`
-   - Expected: `200 OK`
+### **Complete End-to-End Workflow**
 
-4. **Shipping Health**
-   - Method: `GET`
-   - URL: `{{baseUrl}}:3002/health`
-   - Expected: `200 OK`
-
-5. **Orchestrator Health**
-   - Method: `GET`
-   - URL: `{{baseUrl}}:3003/health`
-   - Expected: `200 OK`
-
-
-### **Step 4: Test UDDI Service Discovery**
-Run these requests from the "3. UDDI Registry Tests" folder:
-
-1. **Get All Services**
-   - Method: `GET`
-   - URL: `{{baseUrl}}:3004/api/services`
-   - Expected: Array of 4 services
-
-2. **Get Orders Service**
-   - Method: `GET`
-   - URL: `{{baseUrl}}:3004/api/services/orders-service`
-   - Expected: Orders service details
-
-3. **Get Payments Service**
-   - Method: `GET`
-   - URL: `{{baseUrl}}:3004/api/services/payments-service`
-   - Expected: Payments service details
-
-4. **Get Shipping Service**
-   - Method: `GET`
-   - URL: `{{baseUrl}}:3004/api/services/shipping-service`
-   - Expected: Shipping service details
-
-### **Step 5: Test Orders Service**
-Run these requests from the "4. Orders Service Tests" folder:
-
-1. **Create Order**
-   - Method: `POST`
-   - URL: `{{baseUrl}}:3000/orders`
-   - Headers: `Authorization: Bearer {{accessToken}}`
-   - Body (JSON):
+#### **Step 1: Place Order**
+- **Method**: `POST`
+- **URL**: `http://localhost:3003/place-order`
+- **Headers**: `Authorization: Bearer {accessToken}`, `Content-Type: application/json`
+- **Body**:
      ```json
      {
        "id": "ORDER-001",
-       "item": "The Lord of the Rings",
+  "item": "Laptop",
        "quantity": 2,
        "customerName": "John Doe",
        "shippingAddress": {
@@ -224,279 +192,450 @@ Run these requests from the "4. Orders Service Tests" folder:
        }
      }
      ```
-   - Expected: `200 OK` with success message
-   - **Important**: Copy the order ID from response and set the `orderId` variable
 
-2. **Get Order Details**
-   - Method: `GET`
-   - URL: `{{baseUrl}}:3000/orders/{{orderId}}`
-   - Headers: `Authorization: Bearer {{accessToken}}`
-   - Expected: Order details
+#### **Step 2: Check Workflow Status**
+- **Method**: `GET`
+- **URL**: `http://localhost:3003/workflow-status/ORDER-001`
+- **Headers**: `Authorization: Bearer {accessToken}`
+- **Expected**: Complete workflow status with all service responses
 
-### **Step 6: Test Payments Service**
-Run these requests from the "5. Payments Service Tests" folder:
+#### **Step 3: Verify Order in Orders Service**
+- **Method**: `GET`
+- **URL**: `http://localhost:3000/orders/ORDER-001`
+- **Headers**: `Authorization: Bearer {accessToken}`
+- **Expected**: Order details
 
-1. **Get Payment Details**
-   - Method: `GET`
-   - URL: `{{baseUrl}}:3001/payments/{{orderId}}`
-   - Headers: `Authorization: Bearer {{accessToken}}`
-   - Expected: Payment details (may take 10-15 seconds to process)
+#### **Step 4: Verify Payment**
+- **Method**: `GET`
+- **URL**: `http://localhost:3001/payments/ORDER-001`
+- **Headers**: `Authorization: Bearer {accessToken}`
+- **Expected**: Payment details (90% success rate)
 
-### **Step 7: Test Shipping Service**
-Run these requests from the "6. Shipping Service Tests" folder:
+#### **Step 5: Verify Shipping**
+- **Method**: `GET`
+- **URL**: `http://localhost:3002/shipping/ORDER-001`
+- **Headers**: `Authorization: Bearer {accessToken}`
+- **Expected**: Shipping details (90% success rate)
 
-1. **Get Shipping Details**
-   - Method: `GET`
-   - URL: `{{baseUrl}}:3002/shipping/{{orderId}}`
-   - Headers: `Authorization: Bearer {{accessToken}}`
-   - Expected: Shipping details (may take 10-15 seconds to process)
+### **cURL Commands**
+```bash
+# Place order
+curl -X POST http://localhost:3003/place-order \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "ORDER-001",
+    "item": "Laptop",
+    "quantity": 2,
+    "customerName": "John Doe",
+    "shippingAddress": {
+      "street": "123 Main St",
+      "city": "New York",
+      "zipCode": "10001"
+    }
+  }'
 
-### **Step 8: Test Orchestrator Service**
-Run these requests from the "7. Orchestrator Service Tests" folder:
+# Check workflow status
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+     http://localhost:3003/workflow-status/ORDER-001
 
-1. **Place Order via Orchestrator**
-   - Method: `POST`
-   - URL: `{{baseUrl}}:3003/place-order`
-   - Headers: `Authorization: Bearer {{accessToken}}`
-   - Body (JSON):
-     ```json
-     {
-       "id": "ORDER-002",
-       "item": "Pride and Prejudice",
-       "quantity": 1,
-       "customerName": "Jane Smith",
-       "shippingAddress": {
-         "street": "456 Oak Ave",
-         "city": "Los Angeles",
-         "zipCode": "90210"
-       }
-     }
-     ```
-   - Expected: `200 OK` with success message
+# Verify order
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+     http://localhost:3000/orders/ORDER-001
 
-2. **Check Workflow Status**
-   - Method: `GET`
-   - URL: `{{baseUrl}}:3003/workflow-status/{{orderId}}`
-   - Headers: `Authorization: Bearer {{accessToken}}`
-   - Expected: Complete workflow status with order, payment, and shipping details
+# Verify payment
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+     http://localhost:3001/payments/ORDER-001
 
-## 🧪 **SoapUI Testing - Catalog Service**
+# Verify shipping
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+     http://localhost:3002/shipping/ORDER-001
+```
 
-### **Step 1: Import SoapUI Project**
-1. Open **SoapUI**
-2. Go to **File** → **Import Project**
-3. Navigate to: `CatalogService/SoapUI_Tests/CatalogService-Live-WSDL-Project-soapui-project.xml`
-4. Click **Open**
+## 🏪 **5. Catalog Service Testing**
 
-### **Step 2: Test SOAP Operations**
-The imported project contains pre-configured requests for:
+### **SOAP Service Testing (SoapUI)**
 
-#### **1. Get All Products**
-- **Request**: `get_all`
-- **Expected**: List of all products in catalog
-- **Response**: Should include sample products (Lord of the Rings, Pride and Prejudice)
+#### **Setup SoapUI**
+1. Open SoapUI
+2. Import project: `CatalogService/SoapUI_Tests/CatalogService-Live-WSDL-Project-soapui-project.xml`
+3. Ensure Catalog service is running on port 8080
 
-#### **2. Get Product by ID**
-- **Request**: `get_id`
-- **Product ID**: `1` (Lord of the Rings)
-- **Expected**: Product details for ID 1
+#### **SOAP Operations**
 
-#### **3. Add Product**
-- **Request**: `Add_req`
-- **Product Data**:
+##### **Get All Products**
+- **Operation**: `getAllProducts`
+- **Expected**: List of all products
+
+##### **Get Product by ID**
+- **Operation**: `getProduct`
+- **Parameter**: `id = "1"`
+- **Expected**: Product details
+
+##### **Add Product**
+- **Operation**: `addProduct`
+- **Parameter**:
   ```xml
   <product>
-    <description>A thrilling fantasy novel about dragons.</description>
     <id>3</id>
     <name>Dragon's Breath</name>
+  <description>A thrilling fantasy novel about dragons.</description>
     <price>22.50</price>
     <quantity>50</quantity>
   </product>
   ```
-- **Expected**: Success message
 
-#### **4. Update Product**
-- **Request**: `update`
-- **Product Data**:
-  ```xml
-  <product>
-    <description>Updated description</description>
-    <id>1</id>
-    <name>Updated Name</name>
-    <price>30.00</price>
-    <quantity>75</quantity>
-  </product>
-  ```
-- **Expected**: Success message
+##### **Update Product**
+- **Operation**: `updateProduct`
+- **Parameter**: Updated product data
 
-#### **5. Delete Product**
-- **Request**: `del_req`
-- **Product ID**: `4`
-- **Expected**: Success message
+##### **Delete Product**
+- **Operation**: `deleteProduct`
+- **Parameter**: `id = "3"`
 
-### **Step 3: Test REST Endpoints (Optional)**
-The Catalog service also provides REST endpoints:
+### **REST API Testing (Postman)**
 
-1. **Get All Products (REST)**
-   - URL: `http://localhost:8080/CatalogService/api/products`
-   - Method: `GET`
+#### **Update Product Stock**
+- **Method**: `PUT`
+- **URL**: `http://localhost:8080/CatalogService/api/products/1/stock`
+- **Headers**: `Content-Type: application/json`
+- **Body**:
+```json
+{
+  "quantity": 10
+}
+```
 
-2. **Get Product by ID (REST)**
-   - URL: `http://localhost:8080/CatalogService/api/products/1`
-   - Method: `GET`
+#### **Get Product by ID (REST)**
+- **Method**: `GET`
+- **URL**: `http://localhost:8080/CatalogService/api/products/1`
+- **Expected**: Product details in JSON format
 
-3. **Update Stock (REST)**
-   - URL: `http://localhost:8080/CatalogService/api/products/1/stock`
-   - Method: `PUT`
-   - Body: `{"quantity": 10}`
+#### **Get All Products (REST)**
+- **Method**: `GET`
+- **URL**: `http://localhost:8080/CatalogService/api/products`
+- **Expected**: List of all products in JSON format
 
-## 🔄 **Complete Workflow Testing**
-
-### **End-to-End Order Processing Test**
-
-#### **Step 1: Create Order**
-1. Use Postman to create an order via Orders service
-2. Note the order ID from the response
-3. Wait 15-20 seconds for processing
-
-#### **Step 2: Verify Order Processing**
-1. Check order status in Orders service
-2. Check payment status in Payments service
-3. Check shipping status in Shipping service
-4. Check complete workflow status in Orchestrator service
-
-#### **Step 3: Verify Catalog Stock Update**
-1. Check if catalog stock was updated
-2. Use SoapUI to verify product quantities
-3. Use REST endpoints to check stock levels
-
-### **Expected Workflow Timeline**
-- **0-5 seconds**: Order created and stored
-- **5-10 seconds**: Payment processed (90% success rate)
-- **10-15 seconds**: Shipping processed (90% success rate)
-- **15-20 seconds**: Catalog stock updated
-
-## 🎯 **Expected Results**
-
-### **✅ UDDI Registry**
-- Health check returns `200 OK`
-- All 4 services registered and discoverable
-- Service discovery works for all services
-
-### **✅ Orders Service**
-- Health check returns `200 OK`
-- Can create orders with valid token
-- Can retrieve orders by ID
-- Orders are stored in MongoDB
-
-### **✅ Payments Service**
-- Health check returns `200 OK`
-- Can retrieve payment details
-- Payments are processed automatically via RabbitMQ
-- 90% success rate for payment processing
-
-### **✅ Shipping Service**
-- Health check returns `200 OK`
-- Can retrieve shipping details
-- Shipping is processed automatically via RabbitMQ
-- 90% success rate for shipping processing
-
-### **✅ Orchestrator Service**
-- Health check returns `200 OK`
-- Can place orders through orchestrator
-- Workflow status aggregation works
-- Can update catalog stock
-
-### **✅ Catalog Service (SoapUI)**
-- All SOAP operations work correctly
-- Products can be managed via SOAP interface
-- REST endpoints also available for testing
-
-## 🔧 **Troubleshooting**
-
-### **Common Issues**
-
-#### **1. "Unauthorized - Invalid or missing token"**
-- **Solution**: Make sure you've set the `accessToken` variable correctly
-- **Check**: Token should start with `eyJ` (JWT format)
-- **Fix**: Re-run `get-token.bat` to get a fresh token
-
-#### **2. "Cannot connect to service"**
-- **Solution**: Check if Docker containers are running
-- **Command**: `docker compose ps`
-- **Fix**: Restart services with `docker compose restart`
-
-#### **3. "UDDI service not found"**
-- **Solution**: Wait for services to auto-register or restart containers
-- **Check**: Use Postman to run "Get All Services" request from UDDI Registry Tests folder
-- **Fix**: Wait 30-60 seconds after starting services
-
-#### **4. "Order not processing"**
-- **Solution**: Wait 15-20 seconds after creating order
-- **Check**: RabbitMQ queues at `http://localhost:15672`
-- **Fix**: Check service logs for errors
-
-#### **5. "Docker build failures"**
-- **Solution**: Clean Docker system and rebuild
-- **Commands**:
-  ```bash
-  docker system prune -a -f
-  docker compose build --no-cache
-  docker compose up -d
-  ```
-
-### **Service Status Check Commands**
+### **cURL Commands**
 ```bash
-# Check all running containers
+# Get all products (REST)
+curl http://localhost:8080/CatalogService/api/products
+
+# Get product by ID (REST)
+curl http://localhost:8080/CatalogService/api/products/1
+
+# Update product stock (REST)
+curl -X PUT http://localhost:8080/CatalogService/api/products/1/stock \
+  -H "Content-Type: application/json" \
+  -d '{"quantity": 10}'
+```
+
+## 🏗️ **6. BPEL Workflow Testing**
+
+### **Postman Tests**
+
+#### **List Available Workflows**
+- **Method**: `GET`
+- **URL**: `http://localhost:3003/bpel/workflows`
+- **Headers**: `Authorization: Bearer {accessToken}`
+- **Expected**: List of available BPEL workflows
+
+#### **Get Workflow Definition**
+- **Method**: `GET`
+- **URL**: `http://localhost:3003/bpel/workflows/PlaceOrder`
+- **Headers**: `Authorization: Bearer {accessToken}`
+- **Expected**: PlaceOrder workflow definition
+
+#### **Execute Workflow**
+- **Method**: `POST`
+- **URL**: `http://localhost:3003/bpel/workflows/PlaceOrder/execute`
+- **Headers**: `Authorization: Bearer {accessToken}`, `Content-Type: application/json`
+- **Body**: Order data (same as place-order)
+
+#### **List Workflow Executions**
+- **Method**: `GET`
+- **URL**: `http://localhost:3003/bpel/executions`
+- **Headers**: `Authorization: Bearer {accessToken}`
+- **Expected**: List of workflow executions
+
+#### **Get Execution Status**
+- **Method**: `GET`
+- **URL**: `http://localhost:3003/bpel/executions/{executionId}`
+- **Headers**: `Authorization: Bearer {accessToken}`
+- **Expected**: Execution status and details
+
+### **cURL Commands**
+```bash
+# List workflows
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+     http://localhost:3003/bpel/workflows
+
+# Get workflow definition
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+     http://localhost:3003/bpel/workflows/PlaceOrder
+
+# Execute workflow
+curl -X POST \
+     -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"id": "ORDER-002", "item": "Book", "quantity": 1, "customerName": "Jane Doe", "shippingAddress": {"street": "456 Oak St", "city": "Boston", "zipCode": "02101"}}' \
+     http://localhost:3003/bpel/workflows/PlaceOrder/execute
+
+# List executions
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+     http://localhost:3003/bpel/executions
+```
+
+## 🛡️ **7. Governance Framework Testing**
+
+### **Governance Dashboard Test**
+```bash
+# Navigate to governance directory
+cd Governance
+
+# Run governance test script
+node test-governance.js
+
+# Expected output: All governance components working correctly
+```
+
+### **API Versioning Test**
+```bash
+# Test version middleware
+curl http://localhost:3003/bpel/workflows
+
+# Check version headers in response
+```
+
+### **SLA Monitoring Test**
+```bash
+# Test SLA monitoring
+curl http://localhost:3000/health
+curl http://localhost:3001/health
+curl http://localhost:3002/health
+
+# Check response times and status codes
+```
+
+### **Deprecation Management Test**
+  ```bash
+# Test deprecation manager
+cd Governance
+node -e "
+const DeprecationManager = require('./Deprecation-Schedules/deprecation-manager');
+const dm = new DeprecationManager();
+console.log('Deprecation Schedule:', dm.getDeprecationSchedule());
+"
+```
+
+## 🐳 **8. Docker and Infrastructure Testing**
+
+### **Service Status Check**
+```bash
+# Check all services are running
 docker compose ps
 
-# Check service logs
-docker compose logs -f
+# Expected: All services should be "Up"
+```
 
-# Check specific service logs
+### **Service Logs**
+```bash
+# View logs for specific services
+docker compose logs -f orchestrator
 docker compose logs -f orders
 docker compose logs -f payments
 docker compose logs -f shipping
-docker compose logs -f orchestrator
 docker compose logs -f catalog
-docker compose logs -f uddi-registry
-
-# Check RabbitMQ status
-# Open browser: http://localhost:15672
-# Login: guest/guest
 ```
 
-### **Performance Issues**
+### **RabbitMQ Management**
+1. Open browser: `http://localhost:15672`
+2. Login: `guest` / `guest`
+3. Check queues and message flow
+4. Verify message routing
+
+### **MongoDB Connection**
 ```bash
-# Check container resource usage
-docker stats
+# Check MongoDB containers
+docker compose ps | grep mongo
 
-# Check disk space
-docker system df
-
-# Clean up unused resources
-docker system prune -a -f
+# Check database logs
+docker compose logs orders-db
+docker compose logs payments-db
+docker compose logs shipping-db
 ```
 
-## 📝 **Testing Notes**
+## 🚨 **Troubleshooting**
 
-- **Catalog Service**: Test with SoapUI (not Postman)
-- **RabbitMQ**: Check management UI at `http://localhost:15672` (guest/guest)
-- **MongoDB**: Each service has its own database
-- **UDDI**: Services auto-register on startup
-- **OAuth2**: Tokens expire in 24 hours
-- **Processing Time**: Allow 15-20 seconds for complete order processing
-- **Success Rates**: 90% for payment and shipping processing
+### **Common Issues and Solutions**
 
-## 🆘 **Support**
+#### **Services Not Starting**
+```bash
+# Check Docker is running
+docker --version
 
-If you encounter issues:
-1. Check the troubleshooting section above
-2. Review service logs using `docker compose logs`
-3. Verify all services are running with `docker compose ps`
-4. Check RabbitMQ management UI for queue status
-5. Ensure OAuth2 token is valid and not expired
+# Check service logs
+docker compose logs [service-name]
+
+# Restart specific service
+docker compose restart [service-name]
+
+# Rebuild and restart
+docker compose up -d --build
+```
+
+#### **Port Conflicts**
+```bash
+# Check port usage (Windows)
+netstat -ano | findstr :3000
+
+# Stop conflicting services
+taskkill /PID <PID> /F
+
+# Update ports in docker-compose.yml if needed
+```
+
+#### **Authentication Issues**
+```bash
+# Verify OAuth2 server is running
+curl http://localhost:3003/health
+
+# Check JWT token validity
+# Use Token-getter scripts for testing
+
+# Verify token format
+# Token should start with "eyJ"
+```
+
+#### **Database Connection Issues**
+```bash
+# Check MongoDB containers
+docker compose ps | grep mongo
+
+# Check database logs
+docker compose logs orders-db
+
+# Restart database containers
+docker compose restart orders-db payments-db shipping-db
+```
+
+#### **RabbitMQ Connection Issues**
+```bash
+# Check RabbitMQ container
+docker compose ps | grep rabbitmq
+
+# Check RabbitMQ logs
+docker compose logs rabbitmq
+
+# Access RabbitMQ management UI
+# http://localhost:15672 (guest/guest)
+```
+
+#### **Catalog Service Issues**
+```bash
+# Check Catalog service logs
+docker compose logs catalog
+
+# Verify Java service is running
+curl http://localhost:8080/
+
+# Check SOAP WSDL
+curl http://localhost:8080/CatalogService?wsdl
+```
+
+### **Performance Testing**
+
+#### **Load Testing with cURL**
+```bash
+# Test multiple concurrent requests
+for i in {1..10}; do
+  curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+       http://localhost:3000/health &
+done
+wait
+```
+
+#### **Response Time Testing**
+```bash
+# Test response times
+time curl http://localhost:3000/health
+time curl http://localhost:3001/health
+time curl http://localhost:3002/health
+time curl http://localhost:3003/health
+```
+
+## 📊 **Testing Checklist**
+
+### **Pre-Testing Setup**
+- [ ] Docker Desktop is running
+- [ ] All services are started (`docker compose up -d`)
+- [ ] All services show "Up" status (`docker compose ps`)
+- [ ] OAuth2 token is obtained (`get-token.bat`)
+- [ ] Postman collection is imported
+- [ ] SoapUI project is imported
+
+### **Health Checks**
+- [ ] Orders service health check passes
+- [ ] Payments service health check passes
+- [ ] Shipping service health check passes
+- [ ] Orchestrator service health check passes
+- [ ] UDDI Registry health check passes
+- [ ] Catalog service health check passes
+
+### **Authentication**
+- [ ] OAuth2 token is valid
+- [ ] Token has correct scopes (read, write)
+- [ ] Token is properly formatted
+- [ ] Authorization headers work in Postman
+
+### **Service Discovery**
+- [ ] UDDI Registry is accessible
+- [ ] Services can be registered
+- [ ] Services can be discovered
+- [ ] Service health monitoring works
+
+### **Order Workflow**
+- [ ] Order can be placed successfully
+- [ ] Payment processing works (90% success rate)
+- [ ] Shipping processing works (90% success rate)
+- [ ] Workflow status can be checked
+- [ ] All services return correct data
+
+### **Catalog Service**
+- [ ] SOAP operations work in SoapUI
+- [ ] REST API operations work in Postman
+- [ ] Product CRUD operations work
+- [ ] Stock updates work
+- [ ] WSDL is accessible
+
+### **BPEL Workflows**
+- [ ] Workflows can be listed
+- [ ] Workflow definitions can be retrieved
+- [ ] Workflows can be executed
+- [ ] Execution status can be checked
+- [ ] Execution history is maintained
+
+### **Governance Framework**
+- [ ] Governance dashboard works
+- [ ] API versioning functions correctly
+- [ ] SLA monitoring is active
+- [ ] Deprecation management works
+- [ ] All governance components are healthy
+
+## 🎯 **Success Criteria**
+
+### **All Tests Pass When:**
+- ✅ All health checks return 200 OK
+- ✅ OAuth2 authentication works
+- ✅ Complete order workflow executes successfully
+- ✅ All services return expected data
+- ✅ SOAP and REST APIs work correctly
+- ✅ BPEL workflows execute properly
+- ✅ Governance framework is functional
+- ✅ No error messages in service logs
+- ✅ All Docker containers are running
+- ✅ RabbitMQ message flow is working
 
 ---
 
-**🎉 This testing guide provides comprehensive instructions for testing all aspects of the SOA Microservices architecture!**
+**🎉 This testing guide ensures comprehensive validation of all SOA microservices components. Follow the steps in order for best results.**

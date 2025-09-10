@@ -1,9 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const amqp = require('amqplib');
-const swaggerUi = require('swagger-ui-express');
-const YAML = require('yamljs');
-const swaggerDocument = YAML.load('./openapi.yaml');
 const session = require('express-session');
 const cors = require('cors');
 
@@ -75,8 +72,6 @@ app.use(session({
 // Initialize Passport
 app.use(passport.initialize());
 
-// Swagger UI
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // RabbitMQ Connection
 let channel, connection;
@@ -193,16 +188,6 @@ app.get('/payments/:orderId', isAuthenticated, hasScope('read'), async (req, res
     }
 });
 
-// Get all payments (admin scope required)
-app.get('/payments', isAuthenticated, hasScope('admin'), async (req, res) => {
-    try {
-        const payments = await Payment.find({}).sort({ createdAt: -1 });
-        res.status(200).json(payments);
-    } catch (error) {
-        console.error('Error fetching payments:', error);
-        res.status(500).send('Internal Server Error');
-    }
-});
 
 // Health check endpoint (no authentication required)
 app.get('/health', (req, res) => {

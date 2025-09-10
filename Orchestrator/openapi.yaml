@@ -78,6 +78,136 @@ paths:
                 $ref: '#/components/schemas/WorkflowStatus'
         '500':
           description: Internal Server Error.
+  /bpel/workflows:
+    get:
+      summary: List available BPEL workflows
+      responses:
+        '200':
+          description: List of available BPEL workflows
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  workflows:
+                    type: array
+                    items:
+                      type: string
+  /bpel/workflows/{name}:
+    get:
+      summary: Get BPEL workflow definition
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The name of the workflow to retrieve
+      responses:
+        '200':
+          description: BPEL workflow definition
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  workflow:
+                    $ref: '#/components/schemas/BPELWorkflow'
+        '404':
+          description: Workflow not found
+  /bpel/workflows/{name}/execute:
+    post:
+      summary: Execute BPEL workflow
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The name of the workflow to execute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                item:
+                  type: string
+                quantity:
+                  type: integer
+                customerName:
+                  type: string
+                shippingAddress:
+                  type: object
+                  properties:
+                    street:
+                      type: string
+                    city:
+                      type: string
+                    zipCode:
+                      type: string
+      responses:
+        '200':
+          description: BPEL workflow execution completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  result:
+                    $ref: '#/components/schemas/BPELExecutionResult'
+        '500':
+          description: Workflow execution failed
+  /bpel/executions:
+    get:
+      summary: List BPEL workflow executions
+      responses:
+        '200':
+          description: List of BPEL workflow executions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  executions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BPELExecution'
+  /bpel/executions/{id}:
+    get:
+      summary: Get BPEL execution status
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: The execution ID to retrieve
+      responses:
+        '200':
+          description: BPEL execution status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  execution:
+                    $ref: '#/components/schemas/BPELExecution'
+        '404':
+          description: Execution not found
 components:
   schemas:
     OrderSummary:
@@ -164,3 +294,60 @@ components:
               $ref: '#/components/schemas/PaymentSummary'
             shipping:
               $ref: '#/components/schemas/ShippingSummary'
+    BPELWorkflow:
+      type: object
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        description:
+          type: string
+        variables:
+          type: object
+        activities:
+          type: array
+          items:
+            type: object
+    BPELExecution:
+      type: object
+      properties:
+        id:
+          type: string
+        workflowName:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [running, completed, failed]
+        currentActivity:
+          type: integer
+        variables:
+          type: object
+        inputData:
+          type: object
+        outputData:
+          type: object
+        error:
+          type: string
+        duration:
+          type: integer
+    BPELExecutionResult:
+      type: object
+      properties:
+        executionId:
+          type: string
+        status:
+          type: string
+          enum: [completed, failed]
+        result:
+          type: object
+        error:
+          type: string
+        duration:
+          type: integer
